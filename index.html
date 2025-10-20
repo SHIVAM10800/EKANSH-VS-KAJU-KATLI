@@ -24,10 +24,10 @@ const game = new Phaser.Game(config);
 let player, scoreText, gameOverText, score = 0, gameOver = false;
 
 function preload() {
-  // ✅ Use exact file names (no spaces, same folder)
-  this.load.image('player', 'ekansh.png');      // EKANSH
-  this.load.image('good', 'kopra Pathi.png');    // KOPRA PATHI
-  this.load.image('danger', 'kaju Katli.png');   // KAJU KATLI
+  // ✅ Make sure filenames are correct and have no spaces
+  this.load.image('player', 'ekansh.png');       // EKANSH
+  this.load.image('good', 'koprapathi.png');     // KOPRA PATHI
+  this.load.image('danger', 'kajukatli.png');    // KAJU KATLI
 }
 
 function create() {
@@ -38,22 +38,22 @@ function create() {
 
   // 🟢 Player EKANSH
   player = this.physics.add.sprite(w/2, h-100, 'player')
-    .setScale(0.12) // smaller for mobile play
+    .setScale(0.18) // Increased for visibility
     .setCollideWorldBounds(true);
 
   player.nameText = this.add.text(player.x, player.y-50, 'EKANSH', { fontSize:'18px', fill:'#00ff00' }).setOrigin(0.5);
 
-  // 🎮 Touch move (finger drag)
+  // 🎮 Move player with finger
   this.input.on('pointermove', pointer => { if (!gameOver) player.x = pointer.x; });
 
-  // Groups
+  // Groups for good and bad balls
   this.goodBalls = this.physics.add.group();
   this.badBalls = this.physics.add.group();
 
-  // Spawn balls every second
+  // Spawn balls every 1 second
   this.time.addEvent({ delay: 1000, loop: true, callback: ()=>spawnBall(this) });
 
-  // Score text
+  // Score display
   scoreText = this.add.text(20,20,'Score: 0',{ fontSize:'24px', fill:'#fff' });
 
   // ✅ Collisions
@@ -71,7 +71,7 @@ function create() {
   });
 }
 
-// 🟡 Spawn balls (same size for all)
+// 🟡 Spawn function (equal size + visible colors)
 function spawnBall(scene){
   if (gameOver) return;
   const w = scene.scale.width;
@@ -80,11 +80,11 @@ function spawnBall(scene){
   let ball, name;
 
   if (isGood){
-    ball = scene.goodBalls.create(x, -20, 'good').setScale(0.12); // ✅ Same size
-    name = scene.add.text(ball.x, ball.y-25, 'KOPRA PATHI', {fontSize:'14px', fill:'#0ff'}).setOrigin(0.5);
+    ball = scene.goodBalls.create(x, -20, 'good').setScale(0.18); // same size as player
+    name = scene.add.text(ball.x, ball.y-25, 'KOPRA PATHI', {fontSize:'16px', fill:'#00ffff'}).setOrigin(0.5);
   } else {
-    ball = scene.badBalls.create(x, -20, 'danger').setScale(0.12); // ✅ Same size as player
-    name = scene.add.text(ball.x, ball.y-25, 'KAJU KATLI', {fontSize:'14px', fill:'#off'}).setOrigin(0.5);
+    ball = scene.badBalls.create(x, -20, 'danger').setScale(0.18); // same size as player
+    name = scene.add.text(ball.x, ball.y-25, 'KAJU KATLI', {fontSize:'16px', fill:'#ff5555'}).setOrigin(0.5);
   }
 
   ball.body.setVelocityY(160 + Phaser.Math.Between(0,60));
@@ -94,7 +94,7 @@ function spawnBall(scene){
 function update() {
   if (gameOver) return;
 
-  // Update name positions and remove off-screen balls
+  // Update text positions & cleanup
   this.goodBalls.children.iterate(b => {
     if (b && b.nameText){
       b.nameText.setPosition(b.x,b.y-25);
