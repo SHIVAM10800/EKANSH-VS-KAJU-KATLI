@@ -24,20 +24,23 @@ const config = {
 };
 const game = new Phaser.Game(config);
 
-let player, scoreText, gameOver = false, score = 0;
+let player, scoreText, gameOverText, score = 0, gameOver = false;
 
 function preload() {
   const g = this.make.graphics({x:0,y:0,add:false});
-  // player ball
-  g.fillStyle(0x00ff00); g.fillCircle(25,25,25);
+  // player ball (EKANSH)
+  g.fillStyle(0x00ff00);
+  g.fillCircle(25,25,25);
   g.generateTexture('player',50,50);
   g.clear();
   // good ball (KOPRA PATHI)
-  g.fillStyle(0x00ffff); g.fillCircle(20,20,20);
+  g.fillStyle(0x00ffff);
+  g.fillCircle(20,20,20);
   g.generateTexture('good',40,40);
   g.clear();
   // danger ball (KAJU KATLI)
-  g.fillStyle(0xff0000); g.fillCircle(20,20,20);
+  g.fillStyle(0xff0000);
+  g.fillCircle(20,20,20);
   g.generateTexture('danger',40,40);
   g.destroy();
 }
@@ -46,11 +49,14 @@ function create() {
   const w = this.scale.width;
   const h = this.scale.height;
 
+  gameOver = false;
+  score = 0;
+
   // Player EKANSH
   player = this.physics.add.sprite(w/2, h-80, 'player').setBounce(0.8).setCollideWorldBounds(true);
-  this.add.text(player.x, player.y-50, 'EKANSH', { fontSize:'20px', fill:'#00ff00' }).setOrigin(0.5).setDepth(5);
+  player.nameText = this.add.text(player.x, player.y-50, 'EKANSH', { fontSize:'20px', fill:'#00ff00' }).setOrigin(0.5).setDepth(5);
 
-  // Controls
+  // Touch Control
   this.input.on('pointermove', pointer => {
     if (!gameOver) player.x = pointer.x;
   });
@@ -59,20 +65,23 @@ function create() {
   this.goodBalls = this.physics.add.group();
   this.badBalls = this.physics.add.group();
 
-  // Spawn Good & Danger Balls
-  this.time.addEvent({ delay: 1200, loop: true, callback: ()=>spawnBall(this) });
+  // Spawn balls
+  this.time.addEvent({ delay: 1000, loop: true, callback: ()=>spawnBall(this) });
 
-  // Score Text
+  // Score text
   scoreText = this.add.text(20,20,'Score: 0',{ fontSize:'24px', fill:'#fff' });
 
-  // Collision detection
+  // Collisions
   this.physics.add.overlap(player, this.goodBalls, (p,ball)=>{
+    if (ball.nameText) ball.nameText.destroy();
     ball.destroy();
     score += 10;
     scoreText.setText('Score: ' + score);
   });
 
-  this.physics.add.overlap(player, this.badBalls, ()=>{
+  this.physics.add.overlap(player, this.badBalls, (p,ball)=>{
+    if (ball.nameText) ball.nameText.destroy();
+    ball.destroy();
     endGame(this);
   });
 }
@@ -90,23 +99,59 @@ function spawnBall(scene){
     ball = scene.badBalls.create(x, -20, 'danger');
     name = scene.add.text(ball.x, ball.y-30, 'KAJU KATLI', {fontSize:'16px', fill:'#f55'}).setOrigin(0.5);
   }
-  ball.body.setVelocityY(200);
+  ball.body.setVelocityY(200 + Phaser.Math.Between(0,100));
   ball.nameText = name;
 }
 
 function update() {
   if (gameOver) return;
-  // keep names above balls
-  this.goodBalls.children.iterate(b => { if(b && b.nameText){ b.nameText.setPosition(b.x,b.y-30); if(b.y>this.scale.height+50){ b.nameText.destroy(); b.destroy(); } }});
-  this.badBalls.children.iterate(b => { if(b && b.nameText){ b.nameText.setPosition(b.x,b.y-30); if(b.y>this.scale.height+50){ b.nameText.destroy(); b.destroy(); } }});
+
+  // Update text positions and cleanup off-screen
+  this.goodBalls.children.iterate(b => {
+    if (b && b.nameText){
+      b.nameText.setPosition(b.x,b.y-30);
+      if (b.y > this.scale.height+50){
+        b.nameText.destroy();
+        b.destroy();
+      }
+    }
+  });
+  this.badBalls.children.iterate(b => {
+    if (b && b.nameText){
+      b.nameText.setPosition(b.x,b.y-30);
+      if (b.y > this.scale.height+50){
+        b.nameText.destroy();
+        b.destroy();
+      }
+    }
+  });
+
+  // Keep EKANSH name above player
+  if (player && player.nameText) player.nameText.setPosition(player.x, player.y-50);
 }
 
 function endGame(scene){
   if (gameOver) return;
   gameOver = true;
-  scene.add.text(scene.scale.width/2, scene.scale.height/2, '💀 GAME OVER 💀\nTap to Restart', {fontSize:'30px',fill:'#fff',align:'center'}).setOrigin(0.5);
-  scene.input.once('pointerdown', ()=>scene.scene.restart());
-  score = 0;
+
+  // Stop all movement
+  scene.goodBalls.setVelocityY(0);
+  scene.badBalls.setVelocityY(0);
+
+  // Destroy names
+  scene.goodBalls.children.iterate(b => { if(b.nameText) b.nameText.destroy(); });
+  scene.badBalls.children.iterate(b => { if(b.nameText) b.nameText.destroy(); });
+
+  gameOverText = scene.add.text(scene.scale.width/2, scene.scale.height/2,
+    '💀 GAME OVER 💀\nTap to Restart',
+    {fontSize:'30px',fill:'#fff',align:'center'}).setOrigin(0.5);
+
+  scene.input.once('pointerdown', () => {
+    scene.goodBalls.clear(true, true);
+    scene.badBalls.clear(true, true);
+    gameOverText.destroy();
+    scene.scene.restart();
+  });
 }
 </script>
 </body>
