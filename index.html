@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Ekansh vs KAJU KATLI</title>
+<title>EKANSH vs KAJU KATLI & KOPRA PATHI</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
 <style>
   html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; }
@@ -15,31 +15,30 @@ const config = {
   type: Phaser.AUTO,
   width: window.innerWidth,
   height: window.innerHeight,
-  backgroundColor: "#222",
+  backgroundColor: "#111",
   physics: {
     default: 'arcade',
-    arcade: { gravity: { y: 1000 }, debug: false }
+    arcade: { debug: false }
   },
   scene: { preload, create, update }
 };
 const game = new Phaser.Game(config);
 
-let player, monster, cursors, scoreText, gameOver=false, score=0;
+let player, scoreText, gameOver = false, score = 0;
 
 function preload() {
-  // create textures (no images needed)
   const g = this.make.graphics({x:0,y:0,add:false});
-  // player circle
-  g.fillStyle(0x00ff66);
-  g.fillCircle(25,25,25);
+  // player ball
+  g.fillStyle(0x00ff00); g.fillCircle(25,25,25);
   g.generateTexture('player',50,50);
   g.clear();
-  // monster diamond
-  g.fillStyle(0xff3333);
-  g.beginPath();
-  g.moveTo(25,0); g.lineTo(50,25); g.lineTo(25,50); g.lineTo(0,25); g.closePath();
-  g.fillPath();
-  g.generateTexture('monster',50,50);
+  // good ball (KOPRA PATHI)
+  g.fillStyle(0x00ffff); g.fillCircle(20,20,20);
+  g.generateTexture('good',40,40);
+  g.clear();
+  // danger ball (KAJU KATLI)
+  g.fillStyle(0xff0000); g.fillCircle(20,20,20);
+  g.generateTexture('danger',40,40);
   g.destroy();
 }
 
@@ -47,71 +46,67 @@ function create() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  player = this.physics.add.sprite(w/2, h-100, 'player').setBounce(0).setCollideWorldBounds(true);
-  monster = this.add.sprite(w/2, h-160, 'monster');
-  this.add.text(player.x, player.y-50, 'Ekansh', {fontSize:'18px',fill:'#0f0'}).setOrigin(0.5).setDepth(5);
-  this.add.text(monster.x, monster.y-50, 'KAJU KATLI', {fontSize:'18px',fill:'#f44'}).setOrigin(0.5).setDepth(5);
+  // Player EKANSH
+  player = this.physics.add.sprite(w/2, h-80, 'player').setBounce(0.8).setCollideWorldBounds(true);
+  this.add.text(player.x, player.y-50, 'EKANSH', { fontSize:'20px', fill:'#00ff00' }).setOrigin(0.5).setDepth(5);
 
-  // controls
-  cursors = this.input.keyboard.createCursorKeys();
-  this.input.on('pointerdown', ()=> jump(player));
+  // Controls
+  this.input.on('pointermove', pointer => {
+    if (!gameOver) player.x = pointer.x;
+  });
 
-  // coins & obstacles
-  this.coins = this.physics.add.group();
-  this.obstacles = this.physics.add.group();
+  // Groups
+  this.goodBalls = this.physics.add.group();
+  this.badBalls = this.physics.add.group();
 
-  this.time.addEvent({ delay: 1200, loop:true, callback: ()=>{
-    const x = Phaser.Math.Between(60, w-60);
-    const coin = this.coins.create(x, -20, 'player');
-    coin.setScale(0.4).setTint(0xffd700);
-    coin.body.setAllowGravity(false);
-    coin.body.setVelocityY(250);
-  }});
+  // Spawn Good & Danger Balls
+  this.time.addEvent({ delay: 1200, loop: true, callback: ()=>spawnBall(this) });
 
-  this.time.addEvent({ delay: 2000, loop:true, callback: ()=>{
-    const x = Phaser.Math.Between(60, w-60);
-    const obs = this.obstacles.create(x, -20, 'monster');
-    obs.setScale(0.6).setTint(0x996600);
-    obs.body.setAllowGravity(false);
-    obs.body.setVelocityY(300);
-  }});
+  // Score Text
+  scoreText = this.add.text(20,20,'Score: 0',{ fontSize:'24px', fill:'#fff' });
 
-  this.physics.add.overlap(player, this.coins, (p,c)=>{
-    c.destroy();
+  // Collision detection
+  this.physics.add.overlap(player, this.goodBalls, (p,ball)=>{
+    ball.destroy();
     score += 10;
-    scoreText.setText('Score: '+score);
+    scoreText.setText('Score: ' + score);
   });
 
-  this.physics.add.overlap(player, this.obstacles, ()=> endGame(this));
-
-  scoreText = this.add.text(10,10,'Score: 0',{fontSize:'20px',fill:'#fff'});
-
-  // monster follow player slowly
-  this.monsterFollow = this.time.addEvent({
-    delay:50, loop:true, callback: ()=>{
-      if(!gameOver){
-        monster.x += (player.x - monster.x)*0.05;
-      }
-    }
+  this.physics.add.overlap(player, this.badBalls, ()=>{
+    endGame(this);
   });
+}
+
+function spawnBall(scene){
+  if (gameOver) return;
+  const w = scene.scale.width;
+  const isGood = Phaser.Math.Between(0,1);
+  const x = Phaser.Math.Between(40, w-40);
+  let ball, name;
+  if (isGood){
+    ball = scene.goodBalls.create(x, -20, 'good');
+    name = scene.add.text(ball.x, ball.y-30, 'KOPRA PATHI', {fontSize:'16px', fill:'#0ff'}).setOrigin(0.5);
+  } else {
+    ball = scene.badBalls.create(x, -20, 'danger');
+    name = scene.add.text(ball.x, ball.y-30, 'KAJU KATLI', {fontSize:'16px', fill:'#f55'}).setOrigin(0.5);
+  }
+  ball.body.setVelocityY(200);
+  ball.nameText = name;
 }
 
 function update() {
-  if(gameOver) return;
-  if(cursors.left.isDown) player.setVelocityX(-200);
-  else if(cursors.right.isDown) player.setVelocityX(200);
-  else player.setVelocityX(0);
-}
-
-function jump(p){
-  if(p.body.touching.down) p.setVelocityY(-500);
+  if (gameOver) return;
+  // keep names above balls
+  this.goodBalls.children.iterate(b => { if(b && b.nameText){ b.nameText.setPosition(b.x,b.y-30); if(b.y>this.scale.height+50){ b.nameText.destroy(); b.destroy(); } }});
+  this.badBalls.children.iterate(b => { if(b && b.nameText){ b.nameText.setPosition(b.x,b.y-30); if(b.y>this.scale.height+50){ b.nameText.destroy(); b.destroy(); } }});
 }
 
 function endGame(scene){
+  if (gameOver) return;
   gameOver = true;
-  scene.add.text(scene.scale.width/2, scene.scale.height/2, 'GAME OVER\nTap to Restart',{fontSize:'28px',fill:'#fff',align:'center'}).setOrigin(0.5);
-  scene.input.once('pointerdown', ()=> scene.scene.restart());
-  score=0;
+  scene.add.text(scene.scale.width/2, scene.scale.height/2, '💀 GAME OVER 💀\nTap to Restart', {fontSize:'30px',fill:'#fff',align:'center'}).setOrigin(0.5);
+  scene.input.once('pointerdown', ()=>scene.scene.restart());
+  score = 0;
 }
 </script>
 </body>
