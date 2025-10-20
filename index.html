@@ -24,6 +24,7 @@ const game = new Phaser.Game(config);
 let player, scoreText, gameOverText, score = 0, gameOver = false;
 
 function preload() {
+  // Load your custom images (make sure they’re in the same folder)
   this.load.image('player', 'ekansh.png');
   this.load.image('good', 'kopra Pathi.png');
   this.load.image('danger', 'kaju Katli.png');
@@ -36,8 +37,10 @@ function create() {
   score = 0;
 
   // Player EKANSH
-  player = this.physics.add.sprite(w/2, h-80, 'player').setScale(0.4).setCollideWorldBounds(true);
-  player.nameText = this.add.text(player.x, player.y-60, 'EKANSH', { fontSize:'20px', fill:'#00ff00' }).setOrigin(0.5);
+  player = this.physics.add.sprite(w/2, h-80, 'player')
+    .setScale(0.2) // smaller size
+    .setCollideWorldBounds(true);
+  player.nameText = this.add.text(player.x, player.y-50, 'EKANSH', { fontSize:'18px', fill:'#00ff00' }).setOrigin(0.5);
 
   // Touch Control
   this.input.on('pointermove', pointer => { if (!gameOver) player.x = pointer.x; });
@@ -46,8 +49,8 @@ function create() {
   this.goodBalls = this.physics.add.group();
   this.badBalls = this.physics.add.group();
 
-  // Spawning
-  this.time.addEvent({ delay: 1000, loop: true, callback: ()=>spawnBall(this) });
+  // Spawn balls
+  this.time.addEvent({ delay: 900, loop: true, callback: ()=>spawnBall(this) });
 
   // Score
   scoreText = this.add.text(20,20,'Score: 0',{ fontSize:'24px', fill:'#fff' });
@@ -71,16 +74,16 @@ function spawnBall(scene){
   if (gameOver) return;
   const w = scene.scale.width;
   const isGood = Phaser.Math.Between(0,1);
-  const x = Phaser.Math.Between(50, w-50);
+  const x = Phaser.Math.Between(40, w-40);
   let ball, name;
   if (isGood){
-    ball = scene.goodBalls.create(x, -20, 'good').setScale(0.3);
-    name = scene.add.text(ball.x, ball.y-40, 'KOPRA PATHI', {fontSize:'16px', fill:'#0ff'}).setOrigin(0.5);
+    ball = scene.goodBalls.create(x, -20, 'good').setScale(0.15); // smaller good ball
+    name = scene.add.text(ball.x, ball.y-25, 'KOPRA PATHI', {fontSize:'14px', fill:'#0ff'}).setOrigin(0.5);
   } else {
-    ball = scene.badBalls.create(x, -20, 'danger').setScale(0.3);
-    name = scene.add.text(ball.x, ball.y-40, 'KAJU KATLI', {fontSize:'16px', fill:'#f55'}).setOrigin(0.5);
+    ball = scene.badBalls.create(x, -20, 'danger').setScale(0.15); // smaller danger ball
+    name = scene.add.text(ball.x, ball.y-25, 'KAJU KATLI', {fontSize:'14px', fill:'#f55'}).setOrigin(0.5);
   }
-  ball.body.setVelocityY(200 + Phaser.Math.Between(0,100));
+  ball.body.setVelocityY(180 + Phaser.Math.Between(0,70)); // balanced falling speed
   ball.nameText = name;
 }
 
@@ -88,17 +91,17 @@ function update() {
   if (gameOver) return;
   this.goodBalls.children.iterate(b => {
     if (b && b.nameText){
-      b.nameText.setPosition(b.x,b.y-40);
-      if (b.y > this.scale.height+60){ b.nameText.destroy(); b.destroy(); }
+      b.nameText.setPosition(b.x,b.y-25);
+      if (b.y > this.scale.height+40){ b.nameText.destroy(); b.destroy(); }
     }
   });
   this.badBalls.children.iterate(b => {
     if (b && b.nameText){
-      b.nameText.setPosition(b.x,b.y-40);
-      if (b.y > this.scale.height+60){ b.nameText.destroy(); b.destroy(); }
+      b.nameText.setPosition(b.x,b.y-25);
+      if (b.y > this.scale.height+40){ b.nameText.destroy(); b.destroy(); }
     }
   });
-  if (player && player.nameText) player.nameText.setPosition(player.x, player.y-60);
+  if (player && player.nameText) player.nameText.setPosition(player.x, player.y-50);
 }
 
 function endGame(scene){
@@ -112,7 +115,7 @@ function endGame(scene){
 
   gameOverText = scene.add.text(scene.scale.width/2, scene.scale.height/2,
     '💀 GAME OVER 💀\nTap to Restart',
-    {fontSize:'30px',fill:'#fff',align:'center'}).setOrigin(0.5);
+    {fontSize:'26px',fill:'#fff',align:'center'}).setOrigin(0.5);
 
   scene.input.once('pointerdown', () => {
     gameOverText.destroy();
