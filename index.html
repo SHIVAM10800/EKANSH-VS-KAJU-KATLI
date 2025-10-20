@@ -3,13 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Ekansh vs Kaju Katli & Kopra Pathi</title>
+<title>Ekansh vs Kaju Katli & Kopra Pathi Advanced</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
 <style>
   html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; }
+  button { position:absolute; bottom:20px; font-size:18px; padding:10px 20px; display:none; }
 </style>
 </head>
 <body>
+
+<button id="retryBtn">RETRY</button>
+<button id="nextBtn">NEXT</button>
+
 <script>
 const config = {
   type: Phaser.AUTO,
@@ -21,13 +26,17 @@ const config = {
 };
 const game = new Phaser.Game(config);
 
-let player, scoreText, gameOverText, score = 0, gameOver = false;
+let player, goodBalls, badBalls;
+let scoreText, score = 0, level = 1;
+let gameOver = false, powers = {};
+let ballSpeed = 160, spawnRate = 1000;
+let powerActive = null;
+let highScore = localStorage.getItem('highScore') || 0;
 
 function preload() {
-  // ✅ Make sure filenames are correct and have no spaces
-  this.load.image('player', 'ekansh.png');       // EKANSH
-  this.load.image('good', 'kopra Pathi.png');     // KOPRA PATHI
-  this.load.image('danger', 'kaju Katli.png');    // KAJU KATLI
+  this.load.image('player', 'ekansh.png');
+  this.load.image('good', 'kopra Pathi.png');
+  this.load.image('danger', 'kaju Katli.png');
 }
 
 function create() {
@@ -35,101 +44,117 @@ function create() {
   const h = this.scale.height;
   gameOver = false;
   score = 0;
+  ballSpeed = 160;
+  spawnRate = 1000;
+  powerActive = null;
 
-  // 🟢 Player EKANSH
-  player = this.physics.add.sprite(w/2, h-100, 'player')
-    .setScale(0.18) // Increased for visibility
-    .setCollideWorldBounds(true);
-
+  // Player
+  player = this.physics.add.sprite(w/2, h-100, 'player').setScale(0.18).setCollideWorldBounds(true);
   player.nameText = this.add.text(player.x, player.y-50, 'EKANSH', { fontSize:'18px', fill:'#00ff00' }).setOrigin(0.5);
 
-  // 🎮 Move player with finger
-  this.input.on('pointermove', pointer => { if (!gameOver) player.x = pointer.x; });
+  // Touch movement
+  this.input.on('pointermove', pointer => { if(!gameOver) player.x = pointer.x; });
 
-  // Groups for good and bad balls
-  this.goodBalls = this.physics.add.group();
-  this.badBalls = this.physics.add.group();
+  // Groups
+  goodBalls = this.physics.add.group();
+  badBalls = this.physics.add.group();
 
-  // Spawn balls every 1 second
-  this.time.addEvent({ delay: 1000, loop: true, callback: ()=>spawnBall(this) });
-
-  // Score display
+  // Score
   scoreText = this.add.text(20,20,'Score: 0',{ fontSize:'24px', fill:'#fff' });
 
-  // ✅ Collisions
-  this.physics.add.overlap(player, this.goodBalls, (p,ball)=>{
-    if (ball.nameText) ball.nameText.destroy();
-    ball.destroy();
-    score += 10;
-    scoreText.setText('Score: ' + score);
-  });
+  // Spawn balls
+  this.time.addEvent({ delay: spawnRate, loop: true, callback: ()=>spawnBall(this) });
 
-  this.physics.add.overlap(player, this.badBalls, (p,ball)=>{
-    if (ball.nameText) ball.nameText.destroy();
-    ball.destroy();
-    endGame(this);
-  });
+  // Collisions
+  this.physics.add.overlap(player, goodBalls, collectGood, null, this);
+  this.physics.add.overlap(player, badBalls, hitBad, null, this);
+
+  // Powers manager
+  powers = { magnet:false, invisible:false, speed:false, double:false };
 }
 
-// 🟡 Spawn function (equal size + visible colors)
-function spawnBall(scene){
-  if (gameOver) return;
+function spawnBall(scene) {
+  if(gameOver) return;
   const w = scene.scale.width;
   const isGood = Phaser.Math.Between(0,1);
   const x = Phaser.Math.Between(40, w-40);
   let ball, name;
-
-  if (isGood){
-    ball = scene.goodBalls.create(x, -20, 'good').setScale(0.18); // same size as player
-    name = scene.add.text(ball.x, ball.y-25, 'KOPRA PATHI', {fontSize:'16px', fill:'#00ffff'}).setOrigin(0.5);
+  if(isGood){
+    ball = goodBalls.create(x, -20, 'good').setScale(0.18);
+    name = scene.add.text(ball.x, ball.y-25, 'KOPRA PATHI', {fontSize:'16px', fill:'#0ff'}).setOrigin(0.5);
   } else {
-    ball = scene.badBalls.create(x, -20, 'danger').setScale(0.18); // same size as player
+    ball = badBalls.create(x, -20, 'danger').setScale(0.18);
     name = scene.add.text(ball.x, ball.y-25, 'KAJU KATLI', {fontSize:'16px', fill:'#ff5555'}).setOrigin(0.5);
   }
-
-  ball.body.setVelocityY(160 + Phaser.Math.Between(0,60));
+  ball.body.setVelocityY(ballSpeed + Phaser.Math.Between(0,50));
   ball.nameText = name;
 }
 
 function update() {
-  if (gameOver) return;
+  if(gameOver) return;
 
-  // Update text positions & cleanup
-  this.goodBalls.children.iterate(b => {
-    if (b && b.nameText){
-      b.nameText.setPosition(b.x,b.y-25);
-      if (b.y > this.scale.height+40){ b.nameText.destroy(); b.destroy(); }
-    }
-  });
-  this.badBalls.children.iterate(b => {
-    if (b && b.nameText){
-      b.nameText.setPosition(b.x,b.y-25);
-      if (b.y > this.scale.height+40){ b.nameText.destroy(); b.destroy(); }
-    }
-  });
+  // Move texts with balls
+  goodBalls.children.iterate(b=>{ if(b && b.nameText){ b.nameText.setPosition(b.x,b.y-25); if(b.y>this.scale.height+40){ b.nameText.destroy(); b.destroy(); } } });
+  badBalls.children.iterate(b=>{ if(b && b.nameText){ b.nameText.setPosition(b.x,b.y-25); if(b.y>this.scale.height+40){ b.nameText.destroy(); b.destroy(); } } });
 
-  // Keep EKANSH name above player
-  if (player && player.nameText) player.nameText.setPosition(player.x, player.y-50);
+  // Keep player name above
+  if(player && player.nameText) player.nameText.setPosition(player.x, player.y-50);
+
+  // Apply magnet power
+  if(powers.magnet){
+    goodBalls.children.iterate(b=>{ if(b) { b.x = Phaser.Math.Linear(b.x, player.x, 0.05); } });
+  }
+
+  // Level up
+  if(score >= level*100 && level<10){
+    level++;
+    ballSpeed += 20;
+    spawnRate = Math.max(400, spawnRate-50);
+  }
+
+  // Win condition
+  if(level > 10){
+    endGameMsg('YOU WON');
+  }
 }
 
-// 💀 Game Over + Restart
-function endGame(scene){
-  if (gameOver) return;
+// Collect good ball
+function collectGood(p,ball){
+  if(ball.nameText) ball.nameText.destroy();
+  ball.destroy();
+  score += powers.double? 20 : 10;
+  scoreText.setText('Score: '+score);
+}
+
+// Hit bad ball
+function hitBad(p,ball){
+  if(powerActive==='invisible') return; // Ignore collision
+  if(ball.nameText) ball.nameText.destroy();
+  ball.destroy();
+  endGameMsg('YOU LOSS');
+}
+
+// End game message & buttons
+function endGameMsg(msg){
   gameOver = true;
+  goodBalls.setVelocityY(0);
+  badBalls.setVelocityY(0);
+  goodBalls.children.iterate(b=>{ if(b.nameText) b.nameText.destroy(); });
+  badBalls.children.iterate(b=>{ if(b.nameText) b.nameText.destroy(); });
 
-  scene.goodBalls.setVelocityY(0);
-  scene.badBalls.setVelocityY(0);
-  scene.goodBalls.children.iterate(b => { if(b.nameText) b.nameText.destroy(); });
-  scene.badBalls.children.iterate(b => { if(b.nameText) b.nameText.destroy(); });
+  scoreText.setText(score+' pts | Level '+level);
+  if(score>highScore){ highScore=score; localStorage.setItem('highScore',highScore); }
 
-  gameOverText = scene.add.text(scene.scale.width/2, scene.scale.height/2,
-    '💀 GAME OVER 💀\nTap to Restart',
-    {fontSize:'26px',fill:'#fff',align:'center'}).setOrigin(0.5);
+  const text = game.scene.scenes[0].add.text(game.config.width/2, game.config.height/2, msg+'\nScore: '+score+'\nHighScore: '+highScore,
+    {fontSize:'28px', fill:'#fff', align:'center'}).setOrigin(0.5);
 
-  scene.input.once('pointerdown', () => {
-    gameOverText.destroy();
-    scene.scene.restart();
-  });
+  // Show buttons
+  const retryBtn = document.getElementById('retryBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  retryBtn.style.display='block'; nextBtn.style.display=(msg==='YOU WON')?'block':'none';
+
+  retryBtn.onclick = ()=>{ retryBtn.style.display='none'; nextBtn.style.display='none'; game.scene.scenes[0].scene.restart(); };
+  nextBtn.onclick = ()=>{ retryBtn.style.display='none'; nextBtn.style.display='none'; level=1; score=0; ballSpeed=160; spawnRate=1000; game.scene.scenes[0].scene.restart(); };
 }
 </script>
 </body>
