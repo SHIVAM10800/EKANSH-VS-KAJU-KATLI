@@ -1,349 +1,196 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Temple Run: Ekansh vs KAJU KATTRI</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Temple Run: Ekansh vs KAJU KATLI</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
 <style>
-  html,body { height:100%; margin:0; background:#000; overflow:hidden; }
-  #ui { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:40; display:flex; gap:14px; pointer-events:auto; }
-  .btn { width:80px; height:80px; border-radius:50%; border:none; background:rgba(0,0,0,0.45); color:#fff; font-size:28px; box-shadow:0 6px 18px rgba(0,0,0,0.6); }
-  .btn:active { transform:scale(.97); background:#00c853; color:#000; }
-  #jumpBtn { width:88px; height:88px; }
-  #restart { display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:50; padding:14px 26px; font-size:20px; border-radius:12px; border:none; background:#00c853; color:#000; box-shadow:0 10px 30px rgba(0,200,83,0.25); }
-  #hud { position:fixed; left:12px; top:12px; z-index:50; color:#fff; font-family:Arial, sans-serif; text-shadow:0 2px 6px rgba(0,0,0,0.7); }
-  #best { font-size:13px; color:#ffeb3b; margin-top:4px; }
-  @media (max-width:420px){ .btn{ width:66px; height:66px; font-size:22px } #jumpBtn{ width:74px; height:74px } }
+  body { margin:0; background:#000; overflow:hidden; }
+  canvas { display:block; margin:auto; touch-action:none; }
+  .controls {
+    position:fixed;
+    bottom:20px; left:50%; transform:translateX(-50%);
+    display:flex; gap:20px; z-index:10;
+  }
+  button {
+    width:70px; height:70px; border:none; border-radius:50%;
+    background:#333; color:#fff; font-size:28px;
+    box-shadow:0 0 10px #0f0;
+  }
+  button:active { background:#0f0; color:#000; }
 </style>
 </head>
 <body>
 
-<!-- Put these image files in the SAME folder as this index.html:
-     player.png  monster.png  coin.png  obstacle.png  bg.png
-     If any are missing the game will still show placeholders so nothing is invisible. -->
-
-<div id="ui" style="display:none;">
-  <button id="leftBtn" class="btn">⬅️</button>
-  <button id="jumpBtn" class="btn">⏫</button>
-  <button id="rightBtn" class="btn">➡️</button>
-</div>
-
-<button id="restart">🔁 Restart</button>
-
-<div id="hud" style="display:none;">
-  <div id="score" style="font-size:20px">Score: 0</div>
-  <div id="best">Best: 0</div>
+<div class="controls" id="controls" style="display:none;">
+  <button id="left">⬅️</button>
+  <button id="jump">⏫</button>
+  <button id="right">➡️</button>
 </div>
 
 <script>
-/* Robust, playable mobile Phaser 3 game.
-   - Place your images (player.png, monster.png, coin.png, obstacle.png, bg.png) in same folder.
-   - If an image is missing, code creates a visible placeholder so gameplay is never invisible.
-*/
-
-const FILES = {
-  bg: 'bg.png',
-  player: 'player.png',
-  monster: 'monster.png',
-  coin: 'coin.png',
-  obstacle: 'obstacle.png'
-};
-
-class Boot extends Phaser.Scene {
-  constructor(){ super('Boot'); }
-  preload(){
-    // Attempt to load the provided files
-    for (const key of Object.keys(FILES)) {
-      this.load.image(key, FILES[key]);
-    }
-    // small optional audio (safe fallback if connection exists)
-    this.load.audio('coinS','https://cdn.pixabay.com/download/audio/2021/09/14/audio_6c84a49a03.mp3?filename=collect-coin-1-190131.mp3');
-    this.load.audio('jumpS','https://cdn.pixabay.com/download/audio/2021/09/07/audio_3b6c6d7c22.mp3?filename=jump-142094.mp3');
-  }
+class StartScene extends Phaser.Scene {
+  constructor(){ super('StartScene'); }
   create(){
-    // After preload, verify textures exist; if not, create placeholder textures.
-    // NOTE: .exists works after preload.
-    const g = this.make.graphics({x:0,y:0,add:false});
-
-    if (!this.textures.exists('bg')) {
-      g.clear();
-      g.fillStyle(0x1b1b1b, 1);
-      g.fillRect(0,0,64,64);
-      g.generateTexture('bg',64,64);
-    }
-
-    if (!this.textures.exists('player')) {
-      g.clear();
-      g.fillStyle(0x00c853,1);
-      g.fillRoundedRect(0,0,60,80,8);
-      g.generateTexture('player',60,80);
-    }
-
-    if (!this.textures.exists('monster')) {
-      g.clear();
-      g.fillStyle(0xff3d00,1);
-      g.fillRoundedRect(0,0,60,80,8);
-      g.generateTexture('monster',60,80);
-    }
-
-    if (!this.textures.exists('coin')) {
-      g.clear();
-      g.fillStyle(0xffea00,1);
-      g.fillCircle(16,16,16);
-      g.generateTexture('coin',32,32);
-    }
-
-    if (!this.textures.exists('obstacle')) {
-      g.clear();
-      g.fillStyle(0x757575,1);
-      g.fillRect(0,0,60,28);
-      g.generateTexture('obstacle',60,28);
-    }
-
-    this.scene.start('Start');
+    this.add.text(400,250,'Temple Run:\nEkansh vs KAJU KATLI',
+      {fontSize:'32px',fill:'#00ff00',align:'center'}).setOrigin(0.5);
+    this.add.text(400,400,'Tap to Start',{fontSize:'24px',fill:'#fff'}).setOrigin(0.5);
+    this.input.once('pointerdown',()=>this.scene.start('GameScene'));
   }
 }
 
-class Start extends Phaser.Scene {
-  constructor(){ super('Start'); }
+class GameScene extends Phaser.Scene {
+  constructor(){ super('GameScene'); }
+
   create(){
-    const w = this.scale.width, h = this.scale.height;
-    // show UI hud & controls
-    document.getElementById('ui').style.display = 'flex';
-    document.getElementById('hud').style.display = 'block';
-    // title
-    this.add.rectangle(w/2, h/2, w*0.9, h*0.6, 0x000000, 0.45).setOrigin(0.5);
-    this.add.text(w/2, h/2 - 70, 'Temple Run', { fontSize: '40px', fill:'#00ff00' }).setOrigin(0.5);
-    this.add.text(w/2, h/2 - 20, 'Ekansh vs KAJU KATTRI', { fontSize:'18px', fill:'#eee' }).setOrigin(0.5);
-    this.add.text(w/2, h/2 + 40, 'Tap to Start • Swipe to move • Jump button or swipe up', { fontSize:'14px', fill:'#ddd' }).setOrigin(0.5);
+    document.getElementById('controls').style.display='flex';
 
-    this.input.once('pointerdown', () => this.scene.start('Game'));
-  }
-}
+    this.lanes=[160,400,640];
+    this.playerLane=1;
+    this.score=0;
+    this.gameOver=false;
 
-class Game extends Phaser.Scene {
-  constructor(){ super('Game'); }
-  create(){
-    // show UI
-    document.getElementById('ui').style.display = 'flex';
-    document.getElementById('hud').style.display = 'block';
-    document.getElementById('restart').style.display = 'none';
+    // Background
+    this.add.rectangle(400,300,800,600,0x111111);
 
-    const w = this.scale.width, h = this.scale.height;
-    // tile bg (parallax)
-    this.bg = this.add.tileSprite(w/2, h/2, w, h, 'bg');
+    // Player (Ekansh) - Circle
+    this.player=this.add.circle(this.lanes[this.playerLane],500,30,0x00ff00);
+    this.physics.add.existing(this.player);
+    this.player.body.setCollideWorldBounds(true);
+    this.playerName=this.add.text(this.player.x,450,'Ekansh',
+      {fontSize:'20px',fill:'#00ff00'}).setOrigin(0.5);
 
-    // lanes
-    this.lanes = [ w*0.24, w*0.5, w*0.76 ];
-    this.playerLane = 1;
-    this.groundY = h - Math.max(120, Math.round(h*0.17));
+    // Monster (KAJU KATLI) - Diamond shape
+    this.monster=this.add.polygon(this.lanes[0],550,[0,-40,40,0,0,40,-40,0],0xff0000);
+    this.monsterName=this.add.text(this.monster.x,510,'KAJU KATLI',
+      {fontSize:'20px',fill:'#ff5555'}).setOrigin(0.5);
 
-    // gameplay variables
-    this.speed = 320;           // vertical px/s for spawned objects
-    this.spawnDelay = 1500;     // obstacle spawn base
-    this.coinDelay = 1000;
-    this.score = 0;
-    this.best = Number(localStorage.getItem('tr_best') || 0);
-    document.getElementById('best').textContent = 'Best: ' + this.best;
+    // Groups
+    this.obstacles=this.physics.add.group();
+    this.coins=this.physics.add.group();
 
-    // groups
-    this.obstacles = this.physics.add.group();
-    this.coins = this.physics.add.group();
+    // Score
+    this.scoreText=this.add.text(20,20,'Score: 0',{fontSize:'26px',fill:'#fff'});
 
-    // player (physics sprite)
-    this.player = this.physics.add.sprite(this.lanes[this.playerLane], this.groundY, 'player').setDepth(3);
-    // scale player to look appropriate on screen
-    const scaleBase = Math.min(1.2, w / 800);
-    this.player.setScale(scaleBase);
-    this.player.body.setGravityY(1400);
-    this.player.setCollideWorldBounds(true);
+    // Buttons
+    document.getElementById('left').onclick=()=>this.moveLeft();
+    document.getElementById('right').onclick=()=>this.moveRight();
+    document.getElementById('jump').onclick=()=>this.jump();
 
-    // small breathing tween (makes player visible motion)
-    this.tweens.add({ targets: this.player, y: this.groundY - 6, duration:700, yoyo:true, repeat:-1, ease:'Sine.easeInOut' });
-
-    // monster (chaser)
-    this.monster = this.add.sprite(this.lanes[0], this.groundY + 40, 'monster').setDepth(2);
-    this.monster.setScale(scaleBase*0.95);
-
-    // audio safe access
-    this.coinS = this.sound.add('coinS', {volume:0.6});
-    this.jumpS = this.sound.add('jumpS', {volume:0.5});
-
-    // score text
-    this.scoreEl = document.getElementById('score');
-    this.updateScore();
-
-    // input: buttons
-    document.getElementById('leftBtn').onclick = ()=>this.moveLeft();
-    document.getElementById('rightBtn').onclick = ()=>this.moveRight();
-    document.getElementById('jumpBtn').onclick = ()=>this.jump();
-
-    // input: swipe detection
-    this.input.on('pointerdown', (p)=> this._swipeStart = {x:p.x, y:p.y, t:Date.now()});
-    this.input.on('pointerup', (p)=>{
-      if (!this._swipeStart) return;
-      const dx = p.x - this._swipeStart.x, dy = p.y - this._swipeStart.y;
-      const dt = Date.now() - this._swipeStart.t;
-      this._swipeStart = null;
-      // horizontal swipe
-      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) && dt < 400) {
-        if (dx > 0) this.moveRight(); else this.moveLeft();
-      } else if (dy < -60 && Math.abs(dy) > Math.abs(dx)) {
-        this.jump(); // swipe up
-      } else {
-        // tap: if on ground, small jump
-        if (this.player.body.blocked.down) this.jump();
-      }
-    });
-
-    // collisions
-    this.physics.add.overlap(this.player, this.coins, (p,c) => { if (c.active){ c.destroy(); this.score += 10; this.updateScore(); if (this.coinS) this.coinS.play(); } }, null, this);
-    this.physics.add.overlap(this.player, this.obstacles, ()=> this.hitObstacle(), null, this);
-
-    // spawn timers
-    this.obTimer = this.time.addEvent({ delay: this.spawnDelay, loop:true, callback: this.spawnObstacle, callbackScope: this });
-    this.coinTimer = this.time.addEvent({ delay: this.coinDelay, loop:true, callback: this.spawnCoin, callbackScope: this });
-
-    // difficulty progression
-    this.time.addEvent({ delay: 6000, loop:true, callback: ()=> {
-      this.speed = Math.min(900, this.speed + 30);
-      this.obTimer.delay = Math.max(650, this.obTimer.delay - 90);
-      this.coinTimer.delay = Math.max(450, this.coinTimer.delay - 30);
-    } });
-
-    // make frame rate target 60 for smoother feel
-    this.game.loop.targetFps = 60;
-    this.isGameOver = false;
-  }
-
-  spawnObstacle(){
-    if (this.isGameOver) return;
-    const lane = Phaser.Math.Between(0,2);
-    const x = this.lanes[lane];
-    const obs = this.obstacles.create(x, -50, 'obstacle');
-    obs.setScale(Math.max(0.7, this.player.scale*0.9));
-    obs.body.setAllowGravity(false);
-    obs.setDepth(2);
-    obs.body.setVelocityY(this.speed);
-    // reduce body size a little for fair collisions
-    obs.body.setSize(obs.width * 0.8, obs.height * 0.8);
-  }
-
-  spawnCoin(){
-    if (this.isGameOver) return;
-    const lane = Phaser.Math.Between(0,2);
-    const x = this.lanes[lane];
-    const coin = this.coins.create(x, -40, 'coin');
-    coin.setScale(Math.max(0.5, this.player.scale*0.6));
-    coin.body.setAllowGravity(false);
-    coin.setDepth(2);
-    coin.body.setVelocityY(this.speed * 0.9);
+    // Spawn objects
+    this.time.addEvent({delay:1500,loop:true,callback:()=>this.spawnObstacle()});
+    this.time.addEvent({delay:1200,loop:true,callback:()=>this.spawnCoin()});
   }
 
   moveLeft(){
-    if (this.isGameOver) return;
-    if (this.playerLane > 0) {
+    if(this.gameOver) return;
+    if(this.playerLane>0){
       this.playerLane--;
-      this.tweens.add({ targets:this.player, x: this.lanes[this.playerLane], duration: 150, ease:'Power2' });
+      this.tweens.add({
+        targets:this.player,
+        x:this.lanes[this.playerLane],
+        duration:150,
+        onUpdate:()=>this.playerName.setX(this.player.x)
+      });
     }
   }
 
   moveRight(){
-    if (this.isGameOver) return;
-    if (this.playerLane < 2) {
+    if(this.gameOver) return;
+    if(this.playerLane<2){
       this.playerLane++;
-      this.tweens.add({ targets:this.player, x: this.lanes[this.playerLane], duration: 150, ease:'Power2' });
+      this.tweens.add({
+        targets:this.player,
+        x:this.lanes[this.playerLane],
+        duration:150,
+        onUpdate:()=>this.playerName.setX(this.player.x)
+      });
     }
   }
 
   jump(){
-    if (this.isGameOver) return;
-    if (this.player.body.blocked.down){
-      this.player.setVelocityY(-700);
-      if (this.jumpS) this.jumpS.play();
+    if(this.gameOver) return;
+    if(this.player.y>=500){
+      this.tweens.add({
+        targets:this.player,
+        y:350,
+        duration:300,
+        yoyo:true,
+        ease:'Power1',
+        onUpdate:()=>this.playerName.setY(this.player.y-50)
+      });
     }
   }
 
-  hitObstacle(){
-    if (this.isGameOver) return;
-    // Basic collision: immediate end. This keeps behavior consistent and avoids complex corner cases.
-    this.endGame();
+  spawnObstacle(){
+    if(this.gameOver) return;
+    const lane=Phaser.Math.Between(0,2);
+    const obs=this.add.rectangle(this.lanes[lane],0,50,50,0xff8800);
+    this.physics.add.existing(obs);
+    obs.body.setVelocityY(300);
+    this.obstacles.add(obs);
+  }
+
+  spawnCoin(){
+    if(this.gameOver) return;
+    const lane=Phaser.Math.Between(0,2);
+    const coin=this.add.circle(this.lanes[lane],0,20,0xffff00);
+    this.physics.add.existing(coin);
+    coin.body.setVelocityY(250);
+    this.coins.add(coin);
+  }
+
+  update(){
+    if(this.gameOver) return;
+
+    // Monster follows player
+    this.monster.x=Phaser.Math.Linear(this.monster.x,this.lanes[this.playerLane],0.02);
+    this.monsterName.setX(this.monster.x);
+
+    // Check collisions
+    this.obstacles.children.each(obs=>{
+      if(obs.y>600) obs.destroy();
+      if(Phaser.Geom.Intersects.CircleToRectangle(this.player.getBounds(),obs.getBounds())){
+        this.endGame();
+      }
+    });
+
+    this.coins.children.each(coin=>{
+      if(coin.y>600) coin.destroy();
+      if(Phaser.Geom.Intersects.CircleToCircle(this.player,coin)){
+        coin.destroy();
+        this.score+=10;
+      }
+    });
+
+    // Update names position
+    this.playerName.setPosition(this.player.x,this.player.y-50);
+
+    // Update score
+    this.score+=0.05;
+    this.scoreText.setText('Score: '+Math.floor(this.score));
   }
 
   endGame(){
-    if (this.isGameOver) return;
-    this.isGameOver = true;
-    // pause timers
-    this.obTimer.paused = true;
-    this.coinTimer.paused = true;
-
-    // hide controls and show restart
-    document.getElementById('ui').style.display = 'none';
-    const r = document.getElementById('restart');
-    r.style.display = 'block';
-
-    // overlay text
-    const w = this.scale.width, h = this.scale.height;
-    this.add.rectangle(w/2, h/2, w*0.9, h*0.45, 0x000000, 0.6).setDepth(100);
-    this.add.text(w/2, h/2 - 40, 'GAME OVER', { fontSize: '36px', fill:'#ff5252' }).setOrigin(0.5).setDepth(101);
-    this.add.text(w/2, h/2 + 6, 'Tap Restart to Play Again', { fontSize:'16px', fill:'#fff' }).setOrigin(0.5).setDepth(101);
-
-    // best score
-    if (Math.floor(this.score) > this.best){
-      this.best = Math.floor(this.score);
-      localStorage.setItem('tr_best', this.best);
-      document.getElementById('best').textContent = 'Best: ' + this.best;
-    }
-
-    r.onclick = ()=> {
-      r.style.display = 'none';
-      this.scene.restart();
-    };
-  }
-
-  update(time, dt){
-    if (this.isGameOver) return;
-    // scroll background slightly based on speed
-    this.bg.tilePositionY += Math.min(8, this.speed / 120);
-
-    // destroy offscreen actors
-    this.obstacles.getChildren().forEach(o => { if (o.y > this.scale.height + 80) o.destroy(); });
-    this.coins.getChildren().forEach(c => { if (c.y > this.scale.height + 80) c.destroy(); });
-
-    // monster chases: smoothly follow player's lane & move forward a bit
-    const targetX = this.lanes[Math.max(0, this.playerLane - 0)];
-    this.monster.x = Phaser.Math.Linear(this.monster.x, targetX, 0.05);
-    this.monster.y = Phaser.Math.Linear(this.monster.y, this.player.y + 40, 0.01);
-
-    // If monster collides with player, end game
-    const dx = Math.abs(this.monster.x - this.player.x);
-    const dy = Math.abs(this.monster.y - this.player.y);
-    if (dx < 28 && dy < 80) this.endGame();
-
-    // score increases by time
-    this.score += dt/1000 * 10;
-    this.updateScore();
-  }
-
-  updateScore(){
-    this.scoreEl = document.getElementById('score');
-    if (this.scoreEl) this.scoreEl.textContent = 'Score: ' + Math.floor(this.score);
+    this.gameOver=true;
+    document.getElementById('controls').style.display='none';
+    this.add.text(400,300,'GAME OVER\nTap to Restart',{fontSize:'30px',fill:'#fff',align:'center'}).setOrigin(0.5);
+    this.input.once('pointerdown',()=>this.scene.start('StartScene'));
   }
 }
 
-const cfg = {
-  type: Phaser.AUTO,
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: window.innerWidth, height: window.innerHeight },
-  backgroundColor: '#111111',
-  physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-  scene: [Boot, Start, Game]
+const config={
+  type:Phaser.AUTO,
+  width:800,
+  height:600,
+  backgroundColor:'#000',
+  physics:{default:'arcade',arcade:{debug:false}},
+  scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
+  scene:[StartScene,GameScene]
 };
 
-const game = new Phaser.Game(cfg);
-
-// handle resize so game stays full-screen
-window.addEventListener('resize', ()=> game.scale.resize(window.innerWidth, window.innerHeight));
+new Phaser.Game(config);
 </script>
 </body>
 </html>
