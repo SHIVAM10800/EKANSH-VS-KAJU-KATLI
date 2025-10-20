@@ -84,7 +84,7 @@ function spawnBall(scene){
     name = scene.add.text(ball.x, ball.y-25, 'KOPRA PATHI', {fontSize:'14px', fill:'#0ff'}).setOrigin(0.5);
   } else {
     ball = scene.badBalls.create(x, -20, 'danger').setScale(0.12); // ✅ Same size as player
-    name = scene.add.text(ball.x, ball.y-25, 'KAJU KATLI', {fontSize:'14px', fill:'#f55'}).setOrigin(0.5);
+    name = scene.add.text(ball.x, ball.y-25, 'KAJU KATLI', {fontSize:'14px', fill:'#off'}).setOrigin(0.5);
   }
 
   ball.body.setVelocityY(160 + Phaser.Math.Between(0,60));
